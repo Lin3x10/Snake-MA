@@ -1,26 +1,33 @@
 import pygame
 import random
 import time
-pygame.font.init()
+import os
 
+pygame.font.init()
+pygame.mixer.init()
 pygame.init()
 
 # size of snake
 BLOCKSIZE = 30
 
-# display variables
 HEIGHT = 600
 WIDTH = 600
 
-# frames
 FPS = 8
 CLOCK = pygame.time.Clock()
 
-# colors
 WHITE = (255, 255, 255)
 RED = (255, 0, 0)
 GREEN = (0, 255, 0)
 BLACK = (0, 0, 0)
+BLUE = (0, 0, 255)
+VIOLET = (255, 0, 255)
+CADETBLUE1 = (152, 245, 255)
+CADETBLUE2 = (142, 229, 238)
+LAVENDERBLUSH1 = (255, 240, 245)
+LAVENDERBLUSH2 = (238, 224, 229)
+BISQUE1 = (250, 220, 190)
+BISQUE2 = (238, 213, 183)
 
 # snake position
 SNAKE_POS_X = BLOCKSIZE
@@ -28,22 +35,27 @@ SNAKE_POS_Y = BLOCKSIZE
 SNAKE_POS_X_CHANGE = 0
 SNAKE_POS_Y_CHANGE = 0
 
+BANANA = pygame.image.load(
+    os.path.join("graphics", "banana.png"))
+BANANA = pygame.transform.scale(BANANA, (BLOCKSIZE, BLOCKSIZE))
+
+CRUNCH = pygame.mixer.Sound(os.path.join(
+    "sounds", "zapsplat_cartoon_bite_crunch_eat_13015.mp3"))
+
+
 # food position
 FOOD_POS_X = round(random.randrange(
     0, WIDTH - BLOCKSIZE) / BLOCKSIZE) * BLOCKSIZE
 FOOD_POS_Y = round(random.randrange(
     0, HEIGHT - BLOCKSIZE) / BLOCKSIZE) * BLOCKSIZE
 
-# fonts
 GAME_OVER_FONT = pygame.font.SysFont("comicsans", 100)
+SCORE = pygame.font.SysFont("comicsans", 40)
 
 RUN = True
 SNAKE_LIST = []
-LENGHT_OF_SNAKE = 1
+LENGTH_OF_SNAKE = 1
 
-
-# SCREEN als globale Variable, weil sie auch ausserhalb dieser Funktion benötigt wird.
-#global SCREEN
 SCREEN = pygame.display.set_mode((WIDTH, HEIGHT))
 pygame.display.set_caption("Snake")
 
@@ -57,12 +69,15 @@ def draw_grid():
                          (i * BLOCKSIZE, 0), (i * BLOCKSIZE, HEIGHT))
 
 
-def snake(BLOCKSIZE, SNAKE_LIST):
+def score(score):
+    VALUE = SCORE.render("" + str(score), True, BLACK)
+    SCREEN.blit(VALUE, (WIDTH / 2, 20))
 
+
+# define the snake with a list
+def snake(BLOCKSIZE, SNAKE_LIST):
     for x in SNAKE_LIST:
         pygame.draw.rect(SCREEN, RED, [x[0], x[1], BLOCKSIZE, BLOCKSIZE])
-
-# def game_over():
 
 
 def game_over_message(text, color):
@@ -71,12 +86,24 @@ def game_over_message(text, color):
                                  2, HEIGHT/2 - game_over_text.get_height()/2))
     pygame.display.update()
 
-# def food():
-
 
 def food():
-    pygame.draw.rect(
-        SCREEN, GREEN, [FOOD_POS_X, FOOD_POS_Y, BLOCKSIZE, BLOCKSIZE])
+    FOOD_RECT = pygame.Rect(FOOD_POS_X, FOOD_POS_Y, BLOCKSIZE, BLOCKSIZE)
+    SCREEN.blit(BANANA, FOOD_RECT)
+
+
+def checkerboard():
+    for x in range(0, WIDTH // BLOCKSIZE):
+        if x % 2 == 0:
+            for y in range(0, WIDTH // BLOCKSIZE):
+                if y % 2 == 0:
+                    pygame.draw.rect(
+                        SCREEN, BISQUE1, [y * BLOCKSIZE, x * BLOCKSIZE, BLOCKSIZE, BLOCKSIZE])
+        else:
+            for y in range(0, WIDTH // BLOCKSIZE):
+                if y % 2 != 0:
+                    pygame.draw.rect(
+                        SCREEN, BISQUE1, [y * BLOCKSIZE, x * BLOCKSIZE, BLOCKSIZE, BLOCKSIZE])
 
 
 while RUN:
@@ -98,20 +125,21 @@ while RUN:
                 SNAKE_POS_X_CHANGE = -BLOCKSIZE
                 SNAKE_POS_Y_CHANGE = 0
 
-        # Schlange darf den Bildschirm nicht verlassen -> game over!
+    # Schlange darf den Bildschirm nicht verlassen -> game over!
     if SNAKE_POS_X >= WIDTH or SNAKE_POS_X < 0 or SNAKE_POS_Y >= HEIGHT or SNAKE_POS_Y < 0:
         RUN = False
 
     SNAKE_POS_X += SNAKE_POS_X_CHANGE
     SNAKE_POS_Y += SNAKE_POS_Y_CHANGE
 
-    SCREEN.fill(BLACK)
+    SCREEN.fill(BISQUE2)
+    checkerboard()
     food()
     SNAKE_HEAD = []
     SNAKE_HEAD.append(SNAKE_POS_X)
     SNAKE_HEAD.append(SNAKE_POS_Y)
     SNAKE_LIST.append(SNAKE_HEAD)
-    if len(SNAKE_LIST) > LENGHT_OF_SNAKE:
+    if len(SNAKE_LIST) > LENGTH_OF_SNAKE:
         del SNAKE_LIST[0]
 
     for x in SNAKE_LIST[:-1]:
@@ -119,8 +147,8 @@ while RUN:
             RUN = False
 
     snake(BLOCKSIZE, SNAKE_LIST)
-
-    draw_grid()
+    score(LENGTH_OF_SNAKE - 1)
+    # draw_grid()
     CLOCK.tick(FPS)
     pygame.display.update()
 
@@ -129,8 +157,9 @@ while RUN:
             0, WIDTH - BLOCKSIZE) / BLOCKSIZE) * BLOCKSIZE
         FOOD_POS_Y = round(random.randrange(
             0, HEIGHT - BLOCKSIZE) / BLOCKSIZE) * BLOCKSIZE
-        LENGHT_OF_SNAKE += 1
+        LENGTH_OF_SNAKE += 1
+        CRUNCH.play()
 
-game_over_message("Game Over!", WHITE)
-time.sleep(2)  # delay
+game_over_message("Game Over!", BLACK)
+time.sleep(2)  # delay before closing game
 pygame.quit()
