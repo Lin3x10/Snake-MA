@@ -41,6 +41,8 @@ BANANA = pygame.transform.scale(BANANA, (BLOCKSIZE, BLOCKSIZE))
 
 CRUNCH = pygame.mixer.Sound(os.path.join(
     "sounds", "zapsplat_cartoon_bite_crunch_eat_13015.mp3"))
+GAME_OVER_SOUND = pygame.mixer.Sound(os.path.join(
+    "sounds", "zapsplat_multimedia_game_tone_lose_item_drop_or_fall_over_fun_54082.mp3"))
 
 
 # food position
@@ -161,5 +163,6 @@ while RUN:
         CRUNCH.play()
 
 game_over_message("Game Over!", BLACK)
+GAME_OVER_SOUND.play()
 time.sleep(2)  # delay before closing game
 pygame.quit()
