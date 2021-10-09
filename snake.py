@@ -2,12 +2,14 @@ import pygame
 import random
 import time
 import os
+from pygame.locals import *
 
 pygame.font.init()
 pygame.mixer.init()
 pygame.init()
 
 # size of snake
+
 BLOCKSIZE = 30
 
 HEIGHT = 600
@@ -29,12 +31,6 @@ LAVENDERBLUSH2 = (238, 224, 229)
 BISQUE1 = (250, 220, 190)
 BISQUE2 = (238, 213, 183)
 
-# snake position
-SNAKE_POS_X = BLOCKSIZE
-SNAKE_POS_Y = BLOCKSIZE
-SNAKE_POS_X_CHANGE = 0
-SNAKE_POS_Y_CHANGE = 0
-
 BANANA = pygame.image.load(
     os.path.join("graphics", "banana.png"))
 BANANA = pygame.transform.scale(BANANA, (BLOCKSIZE, BLOCKSIZE))
@@ -44,22 +40,19 @@ CRUNCH = pygame.mixer.Sound(os.path.join(
 GAME_OVER_SOUND = pygame.mixer.Sound(os.path.join(
     "sounds", "zapsplat_multimedia_game_tone_lose_item_drop_or_fall_over_fun_54082.mp3"))
 
-
 # food position
-FOOD_POS_X = round(random.randrange(
-    0, WIDTH - BLOCKSIZE) / BLOCKSIZE) * BLOCKSIZE
-FOOD_POS_Y = round(random.randrange(
-    0, HEIGHT - BLOCKSIZE) / BLOCKSIZE) * BLOCKSIZE
 
 GAME_OVER_FONT = pygame.font.SysFont("comicsans", 100)
 SCORE = pygame.font.SysFont("comicsans", 40)
 
-RUN = True
-SNAKE_LIST = []
-LENGTH_OF_SNAKE = 1
-
 SCREEN = pygame.display.set_mode((WIDTH, HEIGHT))
 pygame.display.set_caption("Snake")
+
+SNAKE_LIST = []
+
+clicked = False
+
+font = pygame.font.SysFont('Constantia', 30)
 
 
 def draw_grid():
@@ -108,61 +101,154 @@ def checkerboard():
                         SCREEN, BISQUE1, [y * BLOCKSIZE, x * BLOCKSIZE, BLOCKSIZE, BLOCKSIZE])
 
 
-while RUN:
-    for event in pygame.event.get():
-        if event.type == pygame.QUIT:
+class button():
+
+    # colours for button and text
+    button_col = (255, 0, 0)
+    hover_col = (75, 225, 255)
+    click_col = (50, 150, 255)
+    text_col = BLACK
+    width = 180
+    height = 70
+
+    def __init__(self, x, y, text):
+        self.x = x
+        self.y = y
+        self.text = text
+
+    def draw_button(self):
+
+        global clicked
+        action = False
+
+        # get mouse position
+        pos = pygame.mouse.get_pos()
+
+        # create pygame Rect object for the button
+        button_rect = Rect(self.x, self.y, self.width, self.height)
+
+        # check mouseover and clicked conditions
+        if button_rect.collidepoint(pos):
+            if pygame.mouse.get_pressed()[0] == 1:
+                clicked = True
+                pygame.draw.rect(SCREEN, self.click_col, button_rect)
+            elif pygame.mouse.get_pressed()[0] == 0 and clicked == True:
+                clicked = False
+                action = True
+            else:
+                pygame.draw.rect(SCREEN, self.hover_col, button_rect)
+        else:
+            pygame.draw.rect(SCREEN, self.button_col, button_rect)
+
+        # add shading to button
+        pygame.draw.line(SCREEN, WHITE, (self.x, self.y),
+                         (self.x + self.width, self.y), 2)
+        pygame.draw.line(SCREEN, WHITE, (self.x, self.y),
+                         (self.x, self.y + self.height), 2)
+        pygame.draw.line(SCREEN, BLACK, (self.x, self.y + self.height),
+                         (self.x + self.width, self.y + self.height), 2)
+        pygame.draw.line(SCREEN, BLACK, (self.x + self.width, self.y),
+                         (self.x + self.width, self.y + self.height), 2)
+
+        # add text to button
+        text_img = font.render(self.text, True, self.text_col)
+        text_len = text_img.get_width()
+        SCREEN.blit(text_img, (self.x + int(self.width / 2) -
+                    int(text_len / 2), self.y + 25))
+        return action
+
+
+again = button(75, 200, 'Play Again?')
+quit = button(325, 200, 'Quit?')
+
+
+def main():
+
+    RUN = True
+
+    SNAKE_POS_X = BLOCKSIZE
+    SNAKE_POS_Y = BLOCKSIZE
+    SNAKE_POS_X_CHANGE = 0
+    SNAKE_POS_Y_CHANGE = 0
+    LENGTH_OF_SNAKE = 1
+
+    global FOOD_POS_X, FOOD_POS_Y
+    FOOD_POS_X = round(random.randrange(
+        0, WIDTH - BLOCKSIZE) / BLOCKSIZE) * BLOCKSIZE
+    FOOD_POS_Y = round(random.randrange(
+        0, HEIGHT - BLOCKSIZE) / BLOCKSIZE) * BLOCKSIZE
+
+    while RUN:
+
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                RUN = False
+
+            # snake_movement
+            if event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_UP:
+                    SNAKE_POS_X_CHANGE = 0
+                    SNAKE_POS_Y_CHANGE = -BLOCKSIZE
+                elif event.key == pygame.K_DOWN:
+                    SNAKE_POS_X_CHANGE = 0
+                    SNAKE_POS_Y_CHANGE = BLOCKSIZE
+                elif event.key == pygame.K_RIGHT:
+                    SNAKE_POS_X_CHANGE = BLOCKSIZE
+                    SNAKE_POS_Y_CHANGE = 0
+                elif event.key == pygame.K_LEFT:
+                    SNAKE_POS_X_CHANGE = -BLOCKSIZE
+                    SNAKE_POS_Y_CHANGE = 0
+
+        # Schlange darf den Bildschirm nicht verlassen -> game over!
+        if SNAKE_POS_X >= WIDTH or SNAKE_POS_X < 0 or SNAKE_POS_Y >= HEIGHT or SNAKE_POS_Y < 0:
             RUN = False
-        # snake_movement
-        if event.type == pygame.KEYDOWN:
-            if event.key == pygame.K_UP:
-                SNAKE_POS_X_CHANGE = 0
-                SNAKE_POS_Y_CHANGE = -BLOCKSIZE
-            elif event.key == pygame.K_DOWN:
-                SNAKE_POS_X_CHANGE = 0
-                SNAKE_POS_Y_CHANGE = BLOCKSIZE
-            elif event.key == pygame.K_RIGHT:
-                SNAKE_POS_X_CHANGE = BLOCKSIZE
-                SNAKE_POS_Y_CHANGE = 0
-            elif event.key == pygame.K_LEFT:
-                SNAKE_POS_X_CHANGE = -BLOCKSIZE
-                SNAKE_POS_Y_CHANGE = 0
 
-    # Schlange darf den Bildschirm nicht verlassen -> game over!
-    if SNAKE_POS_X >= WIDTH or SNAKE_POS_X < 0 or SNAKE_POS_Y >= HEIGHT or SNAKE_POS_Y < 0:
-        RUN = False
+        SNAKE_POS_X += SNAKE_POS_X_CHANGE
+        SNAKE_POS_Y += SNAKE_POS_Y_CHANGE
 
-    SNAKE_POS_X += SNAKE_POS_X_CHANGE
-    SNAKE_POS_Y += SNAKE_POS_Y_CHANGE
+        SCREEN.fill(BISQUE2)
+        checkerboard()
+        food()
+        SNAKE_HEAD = []
+        SNAKE_HEAD.append(SNAKE_POS_X)
+        SNAKE_HEAD.append(SNAKE_POS_Y)
+        SNAKE_LIST.append(SNAKE_HEAD)
+        if len(SNAKE_LIST) > LENGTH_OF_SNAKE:
+            del SNAKE_LIST[0]
 
-    SCREEN.fill(BISQUE2)
-    checkerboard()
-    food()
-    SNAKE_HEAD = []
-    SNAKE_HEAD.append(SNAKE_POS_X)
-    SNAKE_HEAD.append(SNAKE_POS_Y)
-    SNAKE_LIST.append(SNAKE_HEAD)
-    if len(SNAKE_LIST) > LENGTH_OF_SNAKE:
-        del SNAKE_LIST[0]
+        for x in SNAKE_LIST[:-1]:
+            if x == SNAKE_HEAD:
+                RUN = False
 
-    for x in SNAKE_LIST[:-1]:
-        if x == SNAKE_HEAD:
-            RUN = False
+        snake(BLOCKSIZE, SNAKE_LIST)
+        score(LENGTH_OF_SNAKE - 1)
+        # draw_grid()
+        CLOCK.tick(FPS)
 
-    snake(BLOCKSIZE, SNAKE_LIST)
-    score(LENGTH_OF_SNAKE - 1)
-    # draw_grid()
-    CLOCK.tick(FPS)
+        pygame.display.update()
+
+        if SNAKE_POS_X == FOOD_POS_X and SNAKE_POS_Y == FOOD_POS_Y:
+            FOOD_POS_X = round(random.randrange(
+                0, WIDTH - BLOCKSIZE) / BLOCKSIZE) * BLOCKSIZE
+            FOOD_POS_Y = round(random.randrange(
+                0, HEIGHT - BLOCKSIZE) / BLOCKSIZE) * BLOCKSIZE
+            LENGTH_OF_SNAKE += 1
+            CRUNCH.play()
+
+    game_over_message("Game Over!", BLACK)
+    GAME_OVER_SOUND.play()
+    # pygame.display.update()
+
+    if again.draw_button():
+        main()
+
+    if quit.draw_button():
+        pygame.quit()
+
     pygame.display.update()
 
-    if SNAKE_POS_X == FOOD_POS_X and SNAKE_POS_Y == FOOD_POS_Y:
-        FOOD_POS_X = round(random.randrange(
-            0, WIDTH - BLOCKSIZE) / BLOCKSIZE) * BLOCKSIZE
-        FOOD_POS_Y = round(random.randrange(
-            0, HEIGHT - BLOCKSIZE) / BLOCKSIZE) * BLOCKSIZE
-        LENGTH_OF_SNAKE += 1
-        CRUNCH.play()
+    time.sleep(2)
+    pygame.quit()
 
-game_over_message("Game Over!", BLACK)
-GAME_OVER_SOUND.play()
-time.sleep(2)  # delay before closing game
-pygame.quit()
+
+main()
